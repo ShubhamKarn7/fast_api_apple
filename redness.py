@@ -1,30 +1,44 @@
-import cv2
+from PIL import Image
+import colorsys
 import numpy as np
 
-def calculate_red_percentage(image_path):
-    # Read the image
-    image = cv2.imread(image_path)
+def calculate_percentage(rgb_color, start_color, mid_color, end_color):
+    rgb_normalized = [c / 255.0 for c in rgb_color]
+    start_normalized = [c / 255.0 for c in start_color]
+    mid_normalized = [c / 255.0 for c in mid_color]
+    end_normalized = [c / 255.0 for c in end_color]
 
-    # Convert the image from BGR to RGB
-    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    start_hsv = colorsys.rgb_to_hsv(*start_normalized)
+    mid_hsv = colorsys.rgb_to_hsv(*mid_normalized)
+    end_hsv = colorsys.rgb_to_hsv(*end_normalized)
+    rgb_hsv = colorsys.rgb_to_hsv(*rgb_normalized)
 
-    # Define the lower and upper bounds for the red color
-    lower_red = np.array([0, 0, 100], dtype="uint8")
-    upper_red = np.array([100, 100, 255], dtype="uint8")
+    if start_hsv[0] <= rgb_hsv[0] <= mid_hsv[0]:
+        percentage = (rgb_hsv[0] - start_hsv[0]) / (mid_hsv[0] - start_hsv[0]) * 50
+    else:
+        percentage = 50 + (rgb_hsv[0] - mid_hsv[0]) / (end_hsv[0] - mid_hsv[0]) * 50
 
-    # Create a mask to extract the red portion
-    red_mask = cv2.inRange(rgb_image, lower_red, upper_red)
+    return max(0, min(100, percentage))
 
-    # Count the number of red pixels
-    red_pixel_count = cv2.countNonZero(red_mask)
+def get_dominant_color(image, box_size):
+    center_x, center_y = image.size[0] // 2, image.size[1] // 2
+    box_left = max(0, center_x - box_size // 2)
+    box_upper = max(0, center_y - box_size // 2)
+    box_right = min(image.size[0], center_x + box_size // 2)
+    box_lower = min(image.size[1], center_y + box_size // 2)
 
-    # Calculate the percentage of red pixels
-    total_pixels = image.shape[0] * image.shape[1]
-    red_percentage = (red_pixel_count / total_pixels) * 100
+    box = image.crop((box_left, box_upper, box_right, box_lower))
+    np_image = np.array(box)
+    r, g, b = np_image[..., :3].mean(axis=(0, 1))
 
-    return red_percentage
+    return r, g, b
 
-# Example usage
-image_path = "red-del1.jpeg"
-percentage_red = calculate_red_percentage(image_path)
-print(f"Percentage of red portion on the apple: {percentage_red}%")
+green = (136, 181, 3)
+yellow = (255, 212, 18)
+red = (143, 67, 69)
+
+image = Image.open('Screenshot 2024-01-16 174913.png')
+dominant_color = get_dominant_color(image, 50)
+percentage = calculate_percentage(dominant_color, green, yellow, red)
+
+print(f'The color of the apple is {percentage}% transitioned from green to red.')
