@@ -1,49 +1,28 @@
-import colorsys
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
-def calculate_percentage(rgb_color, start_color, mid_color, end_color):
-    rgb_normalized = [c / 255.0 for c in rgb_color]
-    start_normalized = [c / 255.0 for c in start_color]
-    mid_normalized = [c / 255.0 for c in mid_color]
-    end_normalized = [c / 255.0 for c in end_color]
+def calculate_average_rgb(image_path, box_size=100):
+    # Open the image
+    img = Image.open(image_path)
+    width, height = img.size
 
-    start_hsv = colorsys.rgb_to_hsv(*start_normalized)
-    mid_hsv = colorsys.rgb_to_hsv(*mid_normalized)
-    end_hsv = colorsys.rgb_to_hsv(*end_normalized)
-    rgb_hsv = colorsys.rgb_to_hsv(*rgb_normalized)
+    # Calculate the coordinates for the bounding box
+    left = max(0, width // 2 - box_size // 2)
+    top = max(0, height // 2 - box_size // 2)
+    right = min(width, width // 2 + box_size // 2)
+    bottom = min(height, height // 2 + box_size // 2)
 
-    if start_hsv[0] <= rgb_hsv[0] <= mid_hsv[0]:
-        percentage = (rgb_hsv[0] - start_hsv[0]) / (mid_hsv[0] - start_hsv[0]) * 50
-    else:
-        percentage = 50 + (rgb_hsv[0] - mid_hsv[0]) / (end_hsv[0] - mid_hsv[0]) * 50
+    # Crop the image
+    cropped_img = img.crop((left, top, right, bottom))
 
-    return max(0, min(100, percentage))
+    # Calculate the average RGB value
+    average_rgb = tuple(int(x) for x in cropped_img.resize((1, 1)).getpixel((0, 0)))
 
-def get_dominant_color(image, box_size):
-    center_x, center_y = image.size[0] // 2, image.size[1] // 2
-    box_left = max(0, center_x - box_size // 2)
-    box_upper = max(0, center_y - box_size // 2)
-    box_right = min(image.size[0], center_x + box_size // 2)
-    box_lower = min(image.size[1], center_y + box_size // 2)
+    # Show the cropped image
+    cropped_img.show()
 
-    box = image.crop((box_left, box_upper, box_right, box_lower))
-    dominant_color = box.getcolors(box.size[0]*box.size[1])[0][1]
+    # Return the average RGB value as a color
+    return 'rgb{}'.format(average_rgb)
 
-    # Only return the RGB values, not the alpha channel
-    return dominant_color[:3]
-
-def get_apple_color_percentage(image_path, box_size):
-    image = Image.open(image_path)
-    dominant_color = get_dominant_color(image, box_size)
-
-    green_apple = [136, 181, 3]
-    yellow_apple = [255, 212, 18]
-    red_apple = [143, 67, 69]
-
-    percentage = calculate_percentage(dominant_color, green_apple, yellow_apple, red_apple)
-    return percentage
-
-# Usage
-image_path = 'download (6).jpeg'
-box_size = 100
-print(get_apple_color_percentage(image_path, box_size))
+# Test the function
+image_path = 'download (5).jpeg'
+print(calculate_average_rgb(image_path))
