@@ -8,7 +8,7 @@ model = project.version(4).model
 
 
 
-directory_path = "images"
+directory_path = "Apples"
 labels = "labels"
 
 

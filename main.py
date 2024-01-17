@@ -4,12 +4,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from tempfile import NamedTemporaryFile
 from roboflow import Roboflow
 import os
+import torch
 
 app = FastAPI()
 
-rf = Roboflow(api_key="4Q1ltu8TwBleQSDc8m08")
-project = rf.workspace().project("new-drzrt")
-model = project.version(1).model
+# Load fine-tuned custom model
+model = torch.hub.load('WongKinYiu/yolov7', 'custom', 'best.pt',
+                        force_reload=True, trust_repo=True)
+
 
 # Enable CORS for all origins
 app.add_middleware(
@@ -28,11 +30,15 @@ async def process_image(file: UploadFile):
             temp_file_path = temp_file.name
 
         # Perform YOLO predictions
-        results =model.predict(temp_file_path, confidence=40, overlap=30).json()
+        results = model(temp_file_path)
+
+# Get the bounding boxes, scores, and class IDs
+        boxes = results.xyxy[0].tolist()
+        print(len(boxes))
 
         # Process the results and format them as needed
         # For example, you might want to return the detected objects and their bounding boxes
-        return {"Number of Apples": len(results['predictions'])}
+        return {"Number of Apples": len(boxes)}
 
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
