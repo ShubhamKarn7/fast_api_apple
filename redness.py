@@ -1,6 +1,5 @@
-from PIL import Image
 import colorsys
-import numpy as np
+from PIL import Image
 
 def calculate_percentage(rgb_color, start_color, mid_color, end_color):
     rgb_normalized = [c / 255.0 for c in rgb_color]
@@ -28,17 +27,23 @@ def get_dominant_color(image, box_size):
     box_lower = min(image.size[1], center_y + box_size // 2)
 
     box = image.crop((box_left, box_upper, box_right, box_lower))
-    np_image = np.array(box)
-    r, g, b = np_image[..., :3].mean(axis=(0, 1))
+    dominant_color = box.getcolors(box.size[0]*box.size[1])[0][1]
 
-    return r, g, b
+    # Only return the RGB values, not the alpha channel
+    return dominant_color[:3]
 
-green = (136, 181, 3)
-yellow = (255, 212, 18)
-red = (143, 67, 69)
+def get_apple_color_percentage(image_path, box_size):
+    image = Image.open(image_path)
+    dominant_color = get_dominant_color(image, box_size)
 
-image = Image.open('Screenshot 2024-01-16 174913.png')
-dominant_color = get_dominant_color(image, 50)
-percentage = calculate_percentage(dominant_color, green, yellow, red)
+    green_apple = [136, 181, 3]
+    yellow_apple = [255, 212, 18]
+    red_apple = [143, 67, 69]
 
-print(f'The color of the apple is {percentage}% transitioned from green to red.')
+    percentage = calculate_percentage(dominant_color, green_apple, yellow_apple, red_apple)
+    return percentage
+
+# Usage
+image_path = 'download (6).jpeg'
+box_size = 100
+print(get_apple_color_percentage(image_path, box_size))
