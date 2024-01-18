@@ -1,40 +1,45 @@
-import matplotlib.pyplot as plt
-import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 
-def interpolate_color(start_color, end_color, num_steps):
-    start_r, start_g, start_b = start_color
-    end_r, end_g, end_b = end_color
+def calculate_average_rgb(image_path, box_size=100):
+    # Open the image
+    img = Image.open(image_path)
+    width, height = img.size
 
-    r_step = (end_r - start_r) / num_steps
-    g_step = (end_g - start_g) / num_steps
-    b_step = (end_b - start_b) / num_steps
+    # Calculate the coordinates for the bounding box
+    left = max(0, width // 2 - box_size // 2)
+    top = max(0, height // 2 - box_size // 2)
+    right = min(width, width // 2 + box_size // 2)
+    bottom = min(height, height // 2 + box_size // 2)
 
-    colors = [
-        (
-            int(start_r + i * r_step),
-            int(start_g + i * g_step),
-            int(start_b + i * b_step)
-        )
-        for i in range(num_steps + 1)
-    ]
+    # Crop the image
+    cropped_img = img.crop((left, top, right, bottom))
 
-    return colors
+    # Calculate the average RGB value
+    average_rgb = tuple(int(x) for x in cropped_img.resize((1, 1)).getpixel((0, 0)))
 
-def plot_color_transition(colors):
-    num_steps = len(colors)
-    x = np.arange(0, num_steps)
+    # Return the average RGB value as a color
+    return average_rgb
 
-    fig, ax = plt.subplots(figsize=(8, 1))
-    ax.imshow([colors], aspect='auto', extent=(0, num_steps, 0, 1))
+# Test the function
 
-    ax.set_xticks([])
-    ax.set_yticks([])
-    plt.show()
 
-if __name__ == "__main__":
-    start_color = (255, 212, 18)
-    end_color = (143, 67, 69)
-    num_steps = 50
+apple_colors = {
+    "green": [(0, 150, 0), (150, 255, 255)],  # Adjust ranges as needed
+    "yellow": [(150, 150, 0), (255, 255, 255)],  # Adjust ranges as needed
+    "lime_yellow": [(150, 80, 0), (225, 150, 255)],
+    "red": [(0, 0, 0), (255, 60, 255)]
+}
 
-    colors = interpolate_color(start_color, end_color, num_steps)
-    plot_color_transition(colors)
+def find_color_range(rgb_value, color_ranges):
+    for color, ranges in color_ranges.items():
+        min_range, max_range = ranges
+        if all(min_val <= val <= max_val for val, (min_val, max_val) in zip(rgb_value, zip(min_range, max_range))):
+            return color
+    return "Unknown"
+
+# Example usage:
+image_path = 'download (6).jpeg'
+print(calculate_average_rgb(image_path))
+rgb_value_to_check = calculate_average_rgb(image_path)
+result = find_color_range(rgb_value_to_check, apple_colors)
+print(f"The RGB value {rgb_value_to_check} belongs to the {result} color range.")
