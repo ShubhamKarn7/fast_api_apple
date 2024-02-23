@@ -1,5 +1,34 @@
 from PIL import Image, ImageDraw, ImageFont
 
+import os
+import time
+import requests
+
+def send_image(filename, server_url):
+    try:
+        with open(filename, 'rb') as file:
+            files = {'file': (filename, file, 'image/jpeg')}
+            response = requests.post(server_url, files=files)
+            print(f'Sent {filename}, Status Code: {response.status_code}')
+            print(response.text)
+    except Exception as e:
+        print(f'Error sending {filename}: {e}')
+
+def send_images_from_folder(folder_path, server_url):
+    while True:
+        try:
+            image_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+            for image_file in image_files:
+                image_path = os.path.join(folder_path, image_file)
+                send_image(image_path, server_url)
+                time.sleep(0.3)  # Wait for 1 second before sending the next image
+        except KeyboardInterrupt:
+            print("Script terminated by user.")
+            break
+        except Exception as e:
+            print(f'Error: {e}')
+            time.sleep(1)  # Wait for 1 second before retrying
+            
 def calculate_average_rgb(image_path, box_size=100):
     # Open the image
     img = Image.open(image_path)
